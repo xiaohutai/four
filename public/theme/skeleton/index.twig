@@ -5,22 +5,137 @@
     <hr>
     {{ dump() }}
     <hr>
+        <pre><code>pages</code></pre>
+        {% setcontent foo1 = 'pages' %}
+        <p>{{ foo1.count }} published records</p>
+        <ul>
+            {% for item in foo1.get('pages') %}
+                {% include('_TEST.twig') with { item: item } %}
+            {% endfor %}
+        </ul>
+        <hr>
+        <pre><code>pages/latest/3</code></pre>
+        {% setcontent foo1 = 'pages/latest/3' %}
+        <ul>
+            <li>{{ foo1.count }} published records</li>
+            {% for item in foo1.get('pages') %}
+                {% include('_TEST.twig') with { item: item } %}
+            {% endfor %}
+        </ul>
 
-    {% if record is defined %}
+        <hr>
+        <pre><code>pages/first/3</code></pre>
+        {% setcontent foo1 = 'pages/first/3' %}
+        <ul>
+            <li>{{ foo1.count }} published records</li>
+            {% for item in foo1.get('pages') %}
+                {% include('_TEST.twig') with { item: item } %}
+            {% endfor %}
+        </ul>
 
-        <h1>{{ record.title }}</h1>
+        {#
+        <hr>
+        <pre><code>pages/random/3</code></pre>
+        {% setcontent foo1 = 'pages/random/3' %}
+        <ul>
+            <li>{{ foo1.count }} published records</li>
+            {% for item in foo1.get('pages') %}
+                {% include('_TEST.twig') with { item: item } %}
+            {% endfor %}
+        </ul>
+        #}
 
-        {# Remove this block if you don't need it anymore. #}
-        {{ include('partials/_fresh_install.twig') }}
+        <hr>
+        <pre><code>pages/123456</code></pre>
+        {% setcontent item = 'pages/123456' %}
+        {{ dump(item) }}
 
-        {{ record.teaser }}
+        <hr>
+        <pre><code>pages/9</code></pre>
+        {% setcontent item = 'pages/9' %}
+        {{ dump(item) }}
+        <ul>
+            {% include('_TEST.twig') with { item: item } %}
+        </ul>
+        <hr>
+        <pre><code>pages where { slug: 'quo-et-incidunt-enim-ab-dolorem-porro' }</code></pre>
+        {% setcontent foo = 'pages' where { slug: 'quo-et-incidunt-enim-ab-dolorem-porro' } %}
+        {{ dump(foo) }}
+        {% set item = foo.get('pages')|first %}
+        <ul>
+            {% include('_TEST.twig') with { item: item } %}
+        </ul>
 
-        {{ popup(record.image, 1200, 500) }}
+        <hr>
+        <pre><code>pages where { slug: 'SOMETHING THAT DOES NOT EXIST' }</code></pre>
+        {% setcontent foo = 'pages' where { slug: 'SOMETHING THAT DOES NOT EXIST' } %}
+        {{ dump(foo) }}
 
-        {{ record.content }}
+        <hr>
+        <pre><code>pages where { slug: 'quo-et-incidunt-enim-ab-dolorem-porro', status: 'published', id: 1000 }</code></pre>
+        {% setcontent foo = 'pages' where { slug: 'quo-et-incidunt-enim-ab-dolorem-porro', status: 'published', id: 1000 } %}
+        {{ dump(foo) }}
+        {% set item = foo.get('pages')|first %}
+        <ul>
+            {% include('_TEST.twig') with { item: item } %}
+        </ul>
 
-        {{ include('partials/_recordfooter.twig', { 'record': record }) }}
+        <hr>
+        <pre><code>pages where { slug: 'quo-et-incidunt-enim-ab-dolorem-porro' } returnsingle </code></pre>
+        {% setcontent item = 'pages' where { slug: 'quo-et-incidunt-enim-ab-dolorem-porro' } returnsingle %}
+        {{ dump(item) }}
+        <ul>
+            {% include('_TEST.twig') with { item: item } %}
+        </ul>
 
-    {% endif %}
+{#
+        <hr>
+        <pre><code>pages/doloremque-mollitia-mollitia-earum-et</code></pre>
+        {% setcontent foo3 = 'pages/doloremque-mollitia-mollitia-earum-et' %}
+        {{ dump(foo3) }}
+        EEK
+        {% set item = foo3 %}
+        <ul>
+            {% include('_TEST.twig') with { item: item } %}
+        </ul>
+        <hr>
+        <pre><code>entries limit 3</code></pre>
+        {% setcontent foo4 = 'entries' limit 3 %}
+        {{ dump(foo4) }}
+        <ul>
+            <li>{{ foo4.count }} published records</li>
+            {% for item in foo4.get('entries') %}
+                {% include('_TEST.twig') with { item: item } %}
+            {% endfor %}
+        </ul>
+        <hr>
+        <pre><code>pages where id: 13</code></pre>
+        {% setcontent foo5 = 'pages' where { 'id': 13 } %}
+        {{ dump(foo5) }}
+        <ul>
+            <li>{{ foo5.count }} published records</li>
+            {% for item in foo5.get('pages') %}
+                {% include('_TEST.twig') with { item: item } %}
+            {% endfor %}
+        </ul>
+        <hr>
+        <pre><code>pages where id: 13 returnsingle</code></pre>
+        {% setcontent foo6 = 'pages' where { 'id': 13 } returnsingle %}
+        {{ dump(foo6) }}
+        {% set item = foo6 %}
+        <ul>
+            {% include('_TEST.twig') with { item: item } %}
+        </ul>
+        <hr>
+        <pre><code>pages where status: 'held'</code></pre>
+        {% setcontent foo7 = 'pages' where { status: 'held' } %}
+        {{ dump(foo7) }}
+        <p>{{ foo7.count }} HELD records</p>
+        <ul>
+            {% for item in foo7.get('pages') %}
+                {% include('_TEST.twig') with { item: item } %}
+            {% endfor %}
+        </ul>
+#}
 
 {% endblock main %}

@@ -1,0 +1,12 @@
+
+{% if item %}
+    <li>
+        <code>{{ item.id }}</code>
+        {# <code>{{ item.publishedAt|date('Y-m-d') }}</code> #}
+        <a href="{{ item.link }}">{{ item.title }}</a>
+    </li>
+{% else %}
+    <li>
+        [false]
+    </li>
+{% endif %}
