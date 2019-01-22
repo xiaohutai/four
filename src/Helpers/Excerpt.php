@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Bolt\Helpers;
 
 use Bolt\Entity\Content;
+use Bolt\Entity\Field\Excerptable;
+use Bolt\Utils\Html;
 
 class Excerpt
 {
@@ -18,9 +20,8 @@ class Excerpt
      * Constructor.
      *
      * @param Content|string $content
-     * @param string|null    $title
      */
-    public function __construct($content, $title = null)
+    public function __construct($content, ?string $title = null)
     {
         $this->content = $content;
         $this->title = $title;
@@ -29,43 +30,39 @@ class Excerpt
     /**
      * Get the excerpt of a given piece of text.
      *
-     * @param int         $length
-     * @param bool        $includeTitle
-     * @param string|null $focus
-     *
-     * @return string
+     * @param string|array|null $focus
      */
-    public function getExcerpt(int $length = 200, bool $includeTitle = false, ?string $focus = null): string
+    public function getExcerpt(int $length = 200, bool $includeTitle = false, $focus = null): string
     {
         $title = null;
         $excerpt = '';
 
         if ($includeTitle && $this->content->magicTitle() !== null) {
-            $title = Html::trimText((string) $this->content->magicTitle(), $length);
+            $title = Html::trimText($this->content->magicTitle(), $length);
             $length -= mb_strlen($title);
         }
 
         if ($this->content instanceof Content) {
-            $skip_fields = $includeTitle ? $this->content->magicTitleFields() : [];
+            $skipFields = $this->content->magicTitleFields();
 
-            foreach ($this->content->getFields() as $key => $field) {
-                if (!in_array($field->getName(), $skip_fields, true) && $field->isExcerptable()) {
-                    $excerpt .= (string) $field;
+            foreach ($this->content->getFields() as $field) {
+                if (in_array($field->getName(), $skipFields, true) === false && $field instanceof Excerptable) {
+                    $excerpt .= $field->__toString();
                 }
             }
         } else {
-            $excerpt = (string) $this->content;
+            $excerpt = $this->content;
         }
 
         $excerpt = str_replace('>', '> ', $excerpt);
 
-        if (!$focus) {
-            $excerpt = Html::trimText($excerpt, $length);
-        } else {
+        if ($focus) {
             $excerpt = $this->extractRelevant($focus, $excerpt, $length);
+        } else {
+            $excerpt = Html::trimText($excerpt, $length);
         }
 
-        if (!empty($title)) {
+        if (! empty($title)) {
             $excerpt = '<strong>' . $title . '</strong> ' . '<span>' . $excerpt . '</span>';
         }
 
@@ -76,13 +73,8 @@ class Excerpt
      * Find the locations of each of the words.
      * Nothing exciting here. The array_unique is required, unless you decide
      * to make the words unique before passing in.
-     *
-     * @param array  $words
-     * @param string $fulltext
-     *
-     * @return array
      */
-    private function extractLocations(array $words, $fulltext)
+    private function extractLocations(array $words, string $fulltext): array
     {
         $locations = [];
         foreach ($words as $word) {
@@ -106,13 +98,8 @@ class Excerpt
      * When checking for matches we only change the location if there is a better match.
      * The only exception is where we have only two matches in which case we just take the
      * first as will be equally distant.
-     *
-     * @param array $locations
-     * @param int   $prevCount
-     *
-     * @return int
      */
-    private function determineSnipLocation(array $locations, $prevCount)
+    private function determineSnipLocation(array $locations, int $prevCount): int
     {
         // If we only have 1 match we don't actually do the for loop so set to the first
         $startPos = (int) reset($locations);
@@ -136,9 +123,7 @@ class Excerpt
             }
         }
 
-        $startPos = $startPos > $prevCount ? $startPos - $prevCount : 0;
-
-        return $startPos;
+        return $startPos > $prevCount ? $startPos - $prevCount : 0;
     }
 
     /**
@@ -147,22 +132,18 @@ class Excerpt
      * @see: http://www.boyter.org/2013/04/building-a-search-result-extract-generator-in-php/
      *
      * @param string|array $words
-     * @param string       $fulltext
-     * @param int          $relLength
-     *
-     * @return string
      */
-    private function extractRelevant($words, $fulltext, $relLength = 300)
+    private function extractRelevant($words, string $fulltext, int $relLength = 300): string
     {
         $fulltext = strip_tags($fulltext);
 
-        if (!is_array($words)) {
+        if (! is_array($words)) {
             $words = explode(' ', $words);
         }
 
         // 1/6 ratio on prevcount tends to work pretty well and puts the terms
         // in the middle of the extract
-        $prevCount = floor($relLength / 6);
+        $prevCount = (int) floor($relLength / 6);
 
         $indicator = '…';
 
@@ -176,10 +157,10 @@ class Excerpt
 
         // if we are going to snip too much...
         if ($textlength - $startPos < $relLength) {
-            $startPos -= ($textlength - $startPos) / 2;
+            $startPos -= (int) round(($textlength - $startPos) / 2);
         }
 
-        $relText = mb_substr($fulltext, (int) $startPos, (int) $relLength);
+        $relText = mb_substr($fulltext, $startPos, $relLength);
 
         // check to ensure we don't snip the last word if that's the match
         if ($startPos + $relLength < $textlength) {

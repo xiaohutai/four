@@ -1,59 +1,56 @@
 //** Bootstrap Overrides
 
-$colors: (
-  "gray":                     #f6f6f6
-);
-
-$theme-colors: (
-  "primary":                  #2e2ec2,
-  "secondary":                #4c5377,
-  "success":                  #08bb68,
-  "status-published":         #7fa800,
-  "status-draft":             #0569e2,
-  "status-held":              #ca2300,
-  "status-timed":             #a80,
-);
-
-// typography
-// @see: https://css-tricks.com/snippets/css/system-font-stack/
-$font-family-base:              -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+// Typography
+$font-family-base:              -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
 $headings-font-family:          'Source Sans Pro', sans-serif;
+
+$font-size-base:                0.85rem;
+
 $font-weight-light:             300;
 $font-weight-normal:            400;
-$font-weight-semibold:          500;
-$font-weight-bold:              600;
+$font-weight-semibold:          600;
+$font-weight-bold:              700;
 $headings-font-weight:          600;
 
-label{
-  font-weight:                  $font-weight-bold;
-}
+// Links
+$link-color:                var(--primary);
+$link-hover-color:          var(--primary-600);
 
-#editcontent {
-  input.large {
-      font-size: 140%;
-      height: auto;
+
+// Form controls
+$border-radius:                         0.15rem;
+$component-active-bg:                   var(--primary);
+$input-focus-border-color:              var(--primary-400);
+$custom-control-indicator-active-bg:    var(--primary-400);
+$custom-range-thumb-active-bg:          var(--primary-400);
+
+$input-btn-focus-width:                 0.15rem;
+$input-btn-focus-box-shadow:            0 0 0 $input-btn-focus-width var(--primary-200);
+
+// Cards
+$card-border-width:                 0;
+$card-border-radius:                $border-radius;
+$card-border-color:                 transparent;
+$card-bg:                           var(--foreground);
+
+
+// Buttons
+$btn-font-weight: 500;
+
+// Grid
+$grid-breakpoints: (
+  xs: 0,
+  sm: 576px,
+  md: 768px,
+  lg: 992px,
+  xl: 1200px
+);
+
+
+:root {
+
+  @each $bp, $value in $grid-breakpoints {
+    --breakpoint-#{$bp}: #{$value};
   }
 
-  input[readonly] {
-      background-color: #f2f2f2;
-      color: #888;
-  }
-
-  .input-group-append .btn {
-      font-weight: normal;
-      font-size: 0.9rem;
-  }
-}
-
-.sl-overlay {
-  background: #000;
-  opacity: 0.85;
-}
-
-.sl-close {
-  color: #FFF;
-}
-
-.custom-select{
-  -webkit-appearance: none;
 }

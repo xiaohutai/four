@@ -1,10 +1,13 @@
 "use strict";
-
+/**
+ * ES7 Polyfil
+ */
+import "@babel/polyfill";
 /**
  * Vue Core | Config
  */
-import Vue from "vue";
-import "./helpers/filters";
+import "./filters";
+
 // import './registerServiceWorker'
 
 /**
@@ -13,11 +16,9 @@ import "./helpers/filters";
 import "bootstrap";
 
 /**
- * Set Axios
+ * Load Axios
  */
-import Axios from 'axios'
-Vue.prototype.$axios = Axios;
-
+import axios from './helpers/axios'
 /**
 * Load jQuery
 */
@@ -26,11 +27,17 @@ window.$ = $;
 window.jQuery = $;
 
 /**
- * Vue Components
+ * Vue Apps
  */
-import "./Views/admin";
-import "./Views/listing";
-import "./Views/editor";
+// import "./Views/editor";
+import "./Views/user";
+
+import "./app/notifications";
+import "./app/toolbar";
+import "./app/sidebar";
+import "./app/listing";
+import "./app/editor";
+
 
 /**
  * Styling

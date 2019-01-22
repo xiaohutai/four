@@ -16,8 +16,6 @@ final class Areas
 
     /**
      * Areas constructor.
-     *
-     * @param Config $config
      */
     public function __construct(Config $config)
     {
@@ -25,7 +23,10 @@ final class Areas
         $this->initAreas();
     }
 
-    public function get($area, $key = null)
+    /**
+     * @return Collection|string
+     */
+    public function get(string $area, ?string $key = null)
     {
         if ($key) {
             return $this->areas->get($area)[$key];
@@ -34,7 +35,7 @@ final class Areas
         return collect($this->areas->get($area));
     }
 
-    private function initAreas()
+    private function initAreas(): void
     {
         $this->areas = collect([
             'config' => [

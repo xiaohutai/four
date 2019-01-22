@@ -1,36 +1,58 @@
-.idea
 composer.phar
-assets/vendor/
 
-/node_modules/
+### Built Assets and uploads ###
+/public/assets/
+/public/files/*
+!/public/files/hal.jpg
+!/public/files/kitten.jpg
+!/public/files/vlinders.jpg
+
+### NPM and frontend assets building cruft
+assets/vendor/
+node_modules/
 npm-debug.log
 yarn-error.log
-/var/*
-!/var/cache
+
+### File-system cruft and temporary files
+__*
+._*
+.*.swp
+.swp
+*.lock
+!symfony.lock
+*lock.json
+.buildpath
+
+### Platfom-specific files
+.DS_Store
+thumbs.db
+Vagrantfile
+.vagrant*
+.idea
+.vscode/*
+appveyor.yml
+
 /var/cache/*
-!var/cache/.gitkeep
-!/var/data
-!/var/log
+!/var/cache/.gitkeep
 /var/log/*
-!var/log/.gitkeep
-!/var/sessions
+!/var/log/.gitkeep
+!/var/log/e2e-reports/performance/.gitkeep
+!/var/log/e2e-reports/report/.gitkeep
+!/var/log/behat-reports/.gitkeep
+/var/data/*
+!/var/data/.gitkeep
 /var/sessions/*
-!var/sessions/.gitkeep
-!var/SymfonyRequirements.php
-/public/files/
+!/var/sessions/.gitkeep
+
+###Local config
+/config/packages/local
+/config/routes/local
 
 ###> symfony/framework-bundle ###
 /.env
 /public/bundles/
-/var/
 /vendor/
 ###< symfony/framework-bundle ###
-
-###> symfony/phpunit-bridge ###
-.phpunit
-/phpunit.xml
-###< symfony/phpunit-bridge ###
-
 ###> symfony/web-server-bundle ###
 /.web-server-pid
 ###< symfony/web-server-bundle ###
@@ -40,9 +62,11 @@ yarn-error.log
 /.php_cs.cache
 ###< friendsofphp/php-cs-fixer ###
 
-### VisualStudioCode ###
-.vscode/*
-!.vscode/settings.json
-!.vscode/tasks.json
-!.vscode/launch.json
-!.vscode/extensions.json
+###> squizlabs/php_codesniffer ###
+/.phpcs-cache
+/phpcs.xml
+###< squizlabs/php_codesniffer ###
+
+###> phpunit/phpunit ###
+/phpunit.xml
+###< phpunit/phpunit ###

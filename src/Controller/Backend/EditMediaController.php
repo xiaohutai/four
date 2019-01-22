@@ -9,7 +9,6 @@ use Bolt\Configuration\Config;
 use Bolt\Content\MediaFactory;
 use Bolt\Controller\BaseController;
 use Bolt\Entity\Media;
-use Bolt\Repository\MediaRepository;
 use Doctrine\Common\Persistence\ObjectManager;
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\Security;
 use Symfony\Component\Finder\SplFileInfo;
@@ -36,9 +35,6 @@ class EditMediaController extends BaseController
     /** @var UrlGeneratorInterface */
     private $urlGenerator;
 
-    /** @var MediaRepository */
-    private $mediaRepository;
-
     /** @var Areas */
     private $areas;
 
@@ -47,28 +43,19 @@ class EditMediaController extends BaseController
 
     /**
      * EditMediaController constructor.
-     *
-     * @param Config                    $config
-     * @param CsrfTokenManagerInterface $csrfTokenManager
-     * @param ObjectManager             $manager
-     * @param UrlGeneratorInterface     $urlGenerator
-     * @param MediaRepository           $mediaRepository
-     * @param Areas                     $areas
      */
     public function __construct(
         Config $config,
         CsrfTokenManagerInterface $csrfTokenManager,
         ObjectManager $manager,
         UrlGeneratorInterface $urlGenerator,
-        MediaRepository $mediaRepository,
         Areas $areas,
         MediaFactory $mediaFactory
     ) {
-        $this->config = $config;
-        $this->csrfTokenManager = $csrfTokenManager;
+        parent::__construct($config, $csrfTokenManager);
+
         $this->manager = $manager;
         $this->urlGenerator = $urlGenerator;
-        $this->mediaRepository = $mediaRepository;
         $this->areas = $areas;
         $this->mediaFactory = $mediaFactory;
     }
@@ -76,32 +63,27 @@ class EditMediaController extends BaseController
     /**
      * @Route("/media/edit/{id}", name="bolt_media_edit", methods={"GET"})
      *
-     * @param Media|null $media
-     *
-     * @return Response
+     * @throws \Twig_Error_Loader
+     * @throws \Twig_Error_Runtime
+     * @throws \Twig_Error_Syntax
      */
-    public function edit(Media $media = null)
+    public function edit(?Media $media = null): Response
     {
         $context = [
             'media' => $media,
         ];
 
-        return $this->renderTemplate('editcontent/media_edit.twig', $context);
+        return $this->renderTemplate('editcontent/media_edit.html.twig', $context);
     }
 
     /**
      * @Route("/media/edit/{id}", name="bolt_media_edit_post", methods={"POST"})
-     *
-     * @param Media|null $media
-     * @param Request    $request
-     *
-     * @return Response
      */
-    public function editPost(Media $media = null, Request $request): Response
+    public function editPost(Request $request, ?Media $media = null): Response
     {
         $token = new CsrfToken('media_edit', $request->request->get('_csrf_token'));
 
-        if (!$this->csrfTokenManager->isTokenValid($token)) {
+        if (! $this->csrfTokenManager->isTokenValid($token)) {
             throw new InvalidCsrfTokenException();
         }
 
@@ -124,10 +106,6 @@ class EditMediaController extends BaseController
 
     /**
      * @Route("/media/new", name="bolt_media_new", methods={"GET"})
-     *
-     * @param Request $request
-     *
-     * @return RedirectResponse
      */
     public function new(Request $request): RedirectResponse
     {

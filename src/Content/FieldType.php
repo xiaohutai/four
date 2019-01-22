@@ -13,9 +13,9 @@ final class FieldType extends Collection
         parent::__construct(array_merge($this->defaults(), $items));
     }
 
-    private function defaults()
+    private function defaults(): array
     {
-        $values = [
+        return [
             'type' => '',
             'class' => '',
             'group' => '',
@@ -28,7 +28,23 @@ final class FieldType extends Collection
             'default' => '',
             'allowtwig' => false,
         ];
+    }
 
-        return $values;
+    public static function factory(string $name, ContentType $contentType): self
+    {
+        if (isset($contentType['fields'][$name])) {
+            $field = new self($contentType['fields'][$name]);
+        } else {
+            $field = new self([]);
+        }
+
+        return $field;
+    }
+
+    public static function mock(string $name, array $definition): self
+    {
+        $definition['name'] = $name;
+
+        return new self($definition);
     }
 }

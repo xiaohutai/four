@@ -2,9 +2,9 @@ database:
     driver: mysql
     databasename: bolt
     username: root
-    password: 'hunter42'
+    password: ''
 
-sitename: A sample site in CONFIG LOCAL
+sitename: Bolt Four Website
 
 debug: true
 debug_show_loggedoff: false

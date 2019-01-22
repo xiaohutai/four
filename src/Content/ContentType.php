@@ -12,4 +12,20 @@ final class ContentType extends Collection
     {
         return $this->get($name);
     }
+
+    public static function factory(string $name, Collection $contentTypesConfig): ?self
+    {
+        if ($contentTypesConfig->has($name)) {
+            return new self($contentTypesConfig->get($name));
+        }
+
+        return $contentTypesConfig
+            ->filter(function (array $contentTypeConfig) use ($name): bool {
+                return $contentTypeConfig['singular_slug'] === $name;
+            })
+            ->map(function (array $contentTypeConfig): self {
+                return new self($contentTypeConfig);
+            })
+            ->first();
+    }
 }

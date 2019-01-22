@@ -6,6 +6,7 @@ namespace Bolt\Form;
 
 use Bolt\Entity\User;
 use Symfony\Component\Form\AbstractType;
+use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
 use Symfony\Component\Form\Extension\Core\Type\EmailType;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\FormBuilderInterface;
@@ -32,13 +33,32 @@ class UserType extends AbstractType
                 'label' => 'label.username',
                 'disabled' => true,
             ])
-            ->add('fullName', TextType::class, [
-                'label' => 'label.fullname',
+            ->add('displayName', TextType::class, [
+                'label' => 'label.displayname',
             ])
             ->add('email', EmailType::class, [
                 'label' => 'label.email',
             ])
-        ;
+            ->add('locale', ChoiceType::class, [
+                'label' => 'label.locale',
+                'choices' => [
+                    'English (en)' => 'en',
+                    'Nederlands (dutch, nl)' => 'nl',
+                    'Español (Spanish, es)' => 'es',
+                    'français (French, fr)' => 'fr',
+                    'Deutsch (German, de)' => 'de',
+                    'Polski (Polish, pl)' => 'pl',
+                    'Brasilian Portuguese (Brasilian Portuguese, pt_BR)' => 'pt_BR',
+                    'Italiano (Italian, it)' => 'it',
+                ],
+            ])
+            ->add('backendTheme', ChoiceType::class, [
+                'label' => 'label.backend_theme',
+                'choices' => [
+                    'Default Theme' => 'default',
+                    'Light Theme' => 'light',
+                ],
+            ]);
     }
 
     /**

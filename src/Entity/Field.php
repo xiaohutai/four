@@ -4,11 +4,22 @@ declare(strict_types=1);
 
 namespace Bolt\Entity;
 
+use ApiPlatform\Core\Annotation\ApiResource;
 use Bolt\Content\FieldType;
-use Bolt\Content\FieldTypeFactory;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Serializer\Annotation\Groups;
 
 /**
+ * @ApiResource(
+ *     normalizationContext={"groups"={"get_content"}, "enable_max_depth"=true},
+ *     denormalizationContext={"groups"={"put"}},
+ *     collectionOperations={"get"},
+ *     itemOperations={"get",
+ *         "put"={
+ *             "denormalization_context"={"groups"={"put"}},
+ *         }
+ *     }
+ * )
  * @ORM\Entity(repositoryClass="Bolt\Repository\FieldRepository")
  * @ORM\Table(name="bolt_field")
  * @ORM\InheritanceType("SINGLE_TABLE")
@@ -18,7 +29,6 @@ use Doctrine\ORM\Mapping as ORM;
  *     "block" = "Bolt\Entity\Field\BlockField",
  *     "checkbox" = "Bolt\Entity\Field\CheckboxField",
  *     "date" = "Bolt\Entity\Field\DateField",
- *     "datetime" = "Bolt\Entity\Field\DatetimeField",
  *     "embed" = "Bolt\Entity\Field\EmbedField",
  *     "file" = "Bolt\Entity\Field\FileField",
  *     "filelist" = "Bolt\Entity\Field\FilelistField",
@@ -30,6 +40,7 @@ use Doctrine\ORM\Mapping as ORM;
  *     "imagelist" = "Bolt\Entity\Field\ImagelistField",
  *     "integer" = "Bolt\Entity\Field\IntegerField",
  *     "markdown" = "Bolt\Entity\Field\MarkdownField",
+ *     "number" = "Bolt\Entity\Field\NumberField",
  *     "repeater" = "Bolt\Entity\Field\RepeaterField",
  *     "select" = "Bolt\Entity\Field\SelectField",
  *     "slug" = "Bolt\Entity\Field\SlugField",
@@ -45,41 +56,37 @@ class Field
      * @ORM\Id()
      * @ORM\GeneratedValue()
      * @ORM\Column(type="integer")
+     * @Groups({"put"})
      */
     private $id;
 
     /**
-     * @ORM\Column(type="integer")
-     */
-    private $content_id;
-
-    /**
      * @ORM\Column(type="string", length=191)
+     * @Groups("get_content")
      */
     public $name;
 
     /**
      * @ORM\Column(type="json")
+     * @Groups({"public", "put"})
      */
     protected $value = [];
 
     /**
-     * @ORM\Column(type="integer", nullable=true)
-     */
-    private $parent_id;
-
-    /**
      * @ORM\Column(type="integer")
+     * @Groups({"public", "put"})
      */
     private $sortorder = 0;
 
     /**
-     * @ORM\Column(type="string", length=191, nullable=true)
+     * @ORM\Column(type="string", length=191)
+     * @Groups("public")
      */
-    private $locale;
+    private $locale = '';
 
     /**
      * @ORM\Column(type="integer", nullable=true)
+     * @Groups("public")
      */
     private $version;
 
@@ -89,15 +96,38 @@ class Field
      */
     private $content;
 
-    /** @var FieldType */
-    private $fieldTypeDefinition;
+    /**
+     * @ORM\ManyToOne(targetEntity="Bolt\Entity\Field")
+     * @Groups("public")
+     */
+    private $parent;
 
-    /** @var bool */
-    protected $excerptable = false;
+    /** @var ?FieldType */
+    private $fieldTypeDefinition;
 
     public function __toString(): string
     {
         return implode(', ', $this->getValue());
+    }
+
+    public static function factory(array $definition, string $name = ''): self
+    {
+        $type = $definition['type'];
+
+        $classname = '\\Bolt\\Entity\\Field\\' . ucwords($type) . 'Field';
+        if (class_exists($classname)) {
+            $field = new $classname();
+        } else {
+            $field = new self();
+        }
+
+        if (! empty($name)) {
+            $field->setName($name);
+        }
+
+        $field->setDefinition($type, $definition);
+
+        return $field;
     }
 
     public function getId(): ?int
@@ -105,33 +135,25 @@ class Field
         return $this->id;
     }
 
-    public function setConfig()
+    private function setDefinitionFromContentDefinition(): void
     {
         $contentTypeDefinition = $this->getContent()->getDefinition();
 
-        $this->fieldTypeDefinition = FieldTypeFactory::get($this->getName(), $contentTypeDefinition);
+        $this->fieldTypeDefinition = FieldType::factory($this->getName(), $contentTypeDefinition);
     }
 
-    public function getDefinition(): FieldType
+    public function getDefinition(): ?FieldType
     {
+        if ($this->fieldTypeDefinition === null && $this->getContent()) {
+            $this->setDefinitionFromContentDefinition();
+        }
+
         return $this->fieldTypeDefinition;
     }
 
-    public function setDefinition(array $definition, $name = null)
+    public function setDefinition($name, array $definition): void
     {
-        $this->fieldTypeDefinition = FieldTypeFactory::mock($definition, $name);
-    }
-
-    public function getContentId(): ?int
-    {
-        return $this->content_id;
-    }
-
-    public function setContentId(int $content_id): self
-    {
-        $this->content_id = $content_id;
-
-        return $this;
+        $this->fieldTypeDefinition = FieldType::mock($name, $definition);
     }
 
     public function getName(): ?string
@@ -161,21 +183,26 @@ class Field
         return $this->value;
     }
 
+    /**
+     * like getValue() but returns single value for single value fields
+     *
+     * @Groups({"get_content"})
+     *
+     * @return array|mixed|null
+     */
+    public function getFieldValue()
+    {
+        $value = $this->getValue();
+        if (is_iterable($value) && count($value) < 2) {
+            return reset($value);
+        }
+
+        return $value;
+    }
+
     public function setValue(array $value): self
     {
         $this->value = $value;
-
-        return $this;
-    }
-
-    public function getParentId(): ?int
-    {
-        return $this->parent_id;
-    }
-
-    public function setParentId(int $parent_id): self
-    {
-        $this->parent_id = $parent_id;
 
         return $this;
     }
@@ -228,8 +255,15 @@ class Field
         return $this;
     }
 
-    public function isExcerptable(): bool
+    public function getParent(): ?self
     {
-        return $this->excerptable;
+        return $this->parent;
+    }
+
+    public function setParent(?self $parent): self
+    {
+        $this->parent = $parent;
+
+        return $this;
     }
 }

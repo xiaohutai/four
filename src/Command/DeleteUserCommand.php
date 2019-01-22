@@ -54,7 +54,7 @@ class DeleteUserCommand extends Command
     /**
      * {@inheritdoc}
      */
-    protected function configure()
+    protected function configure(): void
     {
         $this
             ->setDescription('Deletes users from the database')
@@ -73,7 +73,7 @@ HELP
             );
     }
 
-    protected function initialize(InputInterface $input, OutputInterface $output)
+    protected function initialize(InputInterface $input, OutputInterface $output): void
     {
         // SymfonyStyle is an optional feature that Symfony provides so you can
         // apply a consistent look to the commands of your application.
@@ -81,9 +81,9 @@ HELP
         $this->io = new SymfonyStyle($input, $output);
     }
 
-    protected function interact(InputInterface $input, OutputInterface $output)
+    protected function interact(InputInterface $input, OutputInterface $output): void
     {
-        if (null !== $input->getArgument('username')) {
+        if ($input->getArgument('username') !== null) {
             return;
         }
 
@@ -106,10 +106,9 @@ HELP
     {
         $username = $this->validator->validateUsername($input->getArgument('username'));
 
-        /** @var User $user */
-        $user = $this->users->findOneByUsername($username);
+        $user = $this->users->findOneBy(['username' => $username]);
 
-        if (null === $user) {
+        if (! $user instanceof User) {
             throw new RuntimeException(sprintf('User with username "%s" not found.', $username));
         }
 
@@ -122,5 +121,7 @@ HELP
         $this->entityManager->flush();
 
         $this->io->success(sprintf('User "%s" (ID: %d, email: %s) was successfully deleted.', $user->getUsername(), $userId, $user->getEmail()));
+
+        return null;
     }
 }

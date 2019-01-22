@@ -1,37 +1,48 @@
-var Encore = require('@symfony/webpack-encore');
-require('babel-polyfill');
+const webpack = require("webpack");
+const WebpackBar = require("webpackbar");
+const Encore = require("@symfony/webpack-encore");
+const path = require("path");
 
-const WorkboxPlugin = require('workbox-webpack-plugin');
+Encore.addPlugin(
+  new WebpackBar({
+    profile: Encore.isProduction() ? true : false,
+    minimal: false
+  })
+)
 
-Encore
-    // the project directory where all compiled assets will be stored
-    .setOutputPath('public/assets/')
-    // the public path used by the web server to access the previous directory
-    .setPublicPath('/assets')
+  .addPlugin(
+    new webpack.ProvidePlugin({
+      $bus: [path.resolve(__dirname, "./assets/js/bus/"), "default"]
+    })
+  )
 
-    
-    .addEntry('bolt', './assets/js/bolt.js')
-    .createSharedEntry('vendor', ['babel-polyfill'])
-    // .addEntry('markdown', './assets/js/markdown.js')
+  .setOutputPath("public/assets/")
+  .setPublicPath("/assets")
+  .setManifestKeyPrefix("assets")
+  .copyFiles({
+    from: "./assets/static"
+  })
+  .copyFiles({
+    from: "./node_modules/flagpack/flags",
+    to: "icons/flags/[name].[ext]",
+    pattern: /\.(svg)$/
+  })
 
-    .autoProvidejQuery()
-    .enableVueLoader()
-    .enableSassLoader()
+  .cleanupOutputBeforeBuild()
+  .disableSingleRuntimeChunk()
+  .enableSourceMaps(!Encore.isProduction())
+  .enableVersioning(Encore.isProduction())
 
-    // TODO: To keep or be removed if not needed
-    // filenames include a hash that changes whenever the file contents change
-    // .enableVersioning()
+  .addEntry("bolt", "./assets/js/bolt.js")
+  .addStyleEntry("theme-default", "./assets/scss/themes/default.scss")
+  .addStyleEntry("theme-light", "./assets/scss/themes/light.scss")
+  .addStyleEntry("theme-dark", "./assets/scss/themes/dark.scss")
+  .addStyleEntry("theme-woordpers", "./assets/scss/themes/woordpers.scss")
 
-    // Workbox should always be the last plugin to add @see: https://developers.google.com/web/tools/workbox/guides/codelabs/webpack#optional-config
-    // .addPlugin(
-    //    new WorkboxPlugin.GenerateSW({
-    //        // these options encourage the ServiceWorkers to get in there fast
-    //        // and not allow any straggling "old" SWs to hang around
-    //        clientsClaim: true,
-    //        skipWaiting: false,
-    //        importsDirectory: 'sw/',
-    // })) 
-;
+  .splitEntryChunks()
+  .autoProvidejQuery()
+  .enableVueLoader()
+  .enableSassLoader()
+  .enablePostCssLoader();
 
-// export the final configuration
 module.exports = Encore.getWebpackConfig();

@@ -8,30 +8,37 @@
       <trans-unit id="TG1D5NO" resname="post.blank_summary">
         <source>post.blank_summary</source>
         <target>Geef uw bericht een samenvatting.</target>
+        <note priority="1">obsolete</note>
       </trans-unit>
       <trans-unit id="BZOzjk." resname="post.blank_content">
         <source>post.blank_content</source>
         <target>Uw bericht heeft nog geen inhoud.</target>
+        <note priority="1">obsolete</note>
       </trans-unit>
       <trans-unit id="S6M.YWY" resname="post.too_short_content">
         <source>post.too_short_content</source>
         <target>Bericht inhoud is te kort (minimaal {{ limit }} karakters)</target>
+        <note priority="1">obsolete</note>
       </trans-unit>
       <trans-unit id="ARUoKOV" resname="comment.blank">
         <source>comment.blank</source>
         <target>Vul alstublieft een reactie in.</target>
+        <note priority="1">obsolete</note>
       </trans-unit>
       <trans-unit id="J.L_ppQ" resname="comment.too_short">
         <source>comment.too_short</source>
         <target>Reactie is te kort (minimaal {{ limit }} karakters)</target>
+        <note priority="1">obsolete</note>
       </trans-unit>
       <trans-unit id=".bkQKXb" resname="comment.too_long">
         <source>comment.too_long</source>
         <target>Reactie is te lang (maximaal {{ limit }} karakters)</target>
+        <note priority="1">obsolete</note>
       </trans-unit>
       <trans-unit id="cTT8h4_" resname="comment.is_spam">
         <source>comment.is_spam</source>
         <target>De inhoud van deze reactie wordt als spam gemarkeerd.</target>
+        <note priority="1">obsolete</note>
       </trans-unit>
     </body>
   </file>

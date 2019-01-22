@@ -8,13 +8,14 @@ use Bolt\Content\ContentType;
 use Bolt\Entity\Content;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\ORM\Query;
+use Doctrine\ORM\QueryBuilder;
 use Pagerfanta\Adapter\DoctrineORMAdapter;
 use Pagerfanta\Pagerfanta;
 use Symfony\Bridge\Doctrine\RegistryInterface;
 
 /**
- * @method Content|null find($id, $lockMode = null, $lockVersion = null)
- * @method Content|null findOneBy(array $criteria, array $orderBy = null)
+ * @method (Content | null) find($id, $lockMode = null, $lockVersion=null)
+ * @method (Content | null) findOneBy(array $criteria, array $orderBy=null)
  * @method Content[]    findAll()
  * @method Content[]    findBy(array $criteria, array $orderBy = null, $limit = null, $offset = null)
  */
@@ -25,51 +26,49 @@ class ContentRepository extends ServiceEntityRepository
         parent::__construct($registry, Content::class);
     }
 
-    private function getQueryBuilder(QueryBuilder $qb = null)
+    public function getQueryBuilder(): QueryBuilder
     {
-        return $qb ?: $this->createQueryBuilder('content');
+        return $this->createQueryBuilder('content');
     }
 
-    public function findAll(int $page = 1, ContentType $contenttype = null): Pagerfanta
+    public function findForPage(int $page = 1, ?ContentType $contentType = null): Pagerfanta
     {
         $qb = $this->getQueryBuilder()
             ->addSelect('a')
             ->innerJoin('content.author', 'a');
 
-        if ($contenttype) {
+        if ($contentType) {
             $qb->where('content.contentType = :ct')
-                ->setParameter('ct', $contenttype['slug']);
+                ->setParameter('ct', $contentType['slug']);
         }
 
         return $this->createPaginator($qb->getQuery(), $page);
     }
 
-    public function findLatest(ContentType $contenttype = null, $amount = 6): ?array
+    public function findLatest(?ContentType $contentType = null, int $amount = 6): ?array
     {
         $qb = $this->getQueryBuilder()
             ->addSelect('a')
             ->innerJoin('content.author', 'a')
             ->orderBy('content.modifiedAt', 'DESC');
 
-        if ($contenttype) {
+        if ($contentType) {
             $qb->where('content.contentType = :ct')
-                ->setParameter('ct', $contenttype['slug']);
+                ->setParameter('ct', $contentType['slug']);
         }
 
-        $result = $qb->getQuery()->getResult();
-
-        return array_slice($result, 0, $amount);
+        $qb->setMaxResults($amount);
+        return $qb->getQuery()->getResult();
     }
 
-    public function findOneBySlug(string $slug)
+    public function findOneBySlug(string $slug): ?Content
     {
         return $this->getQueryBuilder()
-            ->innerJoin('Bolt\Entity\Field\SlugField', 'field')
+            ->innerJoin(\Bolt\Entity\Field\SlugField::class, 'field')
             ->andWhere('field.value = :slug')
             ->setParameter('slug', json_encode([$slug]))
             ->getQuery()
-            ->getResult()
-            ;
+            ->getOneOrNullResult();
 
 //        ->join('m.PropertyEntity', 'p')
 //        ->where('p.value IN (:values)')
@@ -83,6 +82,32 @@ class ContentRepository extends ServiceEntityRepository
         $paginator->setCurrentPage($page);
 
         return $paginator;
+    }
+
+    public function findAdjacentBy(string $column, string $direction, int $currentValue, ?string $contentType = null): ?Content
+    {
+        if ($direction === 'next') {
+            $order = 'ASC';
+            $whereClause = 'content.' . $column .' > :value';
+        } else {
+            $order = 'DESC';
+            $whereClause = 'content.' . $column .' < :value';
+        }
+
+        $qb = $this->getQueryBuilder()
+            ->addSelect('a')
+            ->innerJoin('content.author', 'a')
+            ->orderBy('content.' . $column, $order)
+            ->where($whereClause)
+            ->setParameter('value', $currentValue)
+            ->setMaxResults(1);
+
+        if ($contentType) {
+            $qb->andWhere('content.contentType = :contentType')
+                ->setParameter('contentType', $contentType);
+        }
+
+        return $qb->getQuery()->getOneOrNullResult();
     }
 
 //    /**

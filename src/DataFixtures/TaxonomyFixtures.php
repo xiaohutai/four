@@ -4,10 +4,9 @@ declare(strict_types=1);
 
 namespace Bolt\DataFixtures;
 
-use Bolt\Common\Str;
 use Bolt\Configuration\Config;
 use Bolt\Entity\Taxonomy;
-use Cocur\Slugify\Slugify;
+use Bolt\Utils\Str;
 use Doctrine\Bundle\FixturesBundle\Fixture;
 use Doctrine\Common\DataFixtures\DependentFixtureInterface;
 use Doctrine\Common\Persistence\ObjectManager;
@@ -28,49 +27,38 @@ class TaxonomyFixtures extends Fixture implements DependentFixtureInterface
         ];
     }
 
-    public function load(ObjectManager $manager)
+    public function load(ObjectManager $manager): void
     {
         $this->loadTaxonomies($manager);
 
         $manager->flush();
     }
 
-    private function loadTaxonomies(ObjectManager $manager)
+    private function loadTaxonomies(ObjectManager $manager): void
     {
-        $slugify = Slugify::create();
         $order = 1;
 
         foreach ($this->config as $taxonomyDefinition) {
-            dump($taxonomyDefinition);
-            if (!empty($taxonomyDefinition['options'])) {
-                $options = $taxonomyDefinition['options'];
-            } else {
-                $options = $this->getOptions();
-            }
+            $options = empty($taxonomyDefinition['options']) ? $this->getDefaultOptions() : $taxonomyDefinition['options'];
 
             foreach ($options as $key => $value) {
-                $taxonomy = new Taxonomy();
-
-                if (is_numeric($key)) {
-                    $key = $value;
-                }
-
-                $taxonomy->setType($taxonomyDefinition['slug'])
-                    ->setSlug($slugify->slugify($key))
-                    ->setName(Str::humanize($value))
-                    ->setSortorder($taxonomyDefinition['has_sortorder'] ? $order++ : 0)
-                    ;
+                $taxonomy = Taxonomy::factory(
+                    $taxonomyDefinition['slug'],
+                    $key,
+                    $value,
+                    $taxonomyDefinition['has_sortorder'] ? $order++ : 0
+                );
 
                 $manager->persist($taxonomy);
-                $reference = 'taxonomy_' . $taxonomyDefinition['slug'] . '_' . $slugify->slugify($key);
+                $reference = 'taxonomy_' . $taxonomyDefinition['slug'] . '_' . Str::slug($key);
                 $this->addReference($reference, $taxonomy);
             }
         }
     }
 
-    private function getOptions()
+    private function getDefaultOptions()
     {
-        return ['action', 'adult', 'adventure', 'alpha', 'animals', 'animation', 'anime', 'architecture', 'art',
+        $options = ['action', 'adult', 'adventure', 'alpha', 'animals', 'animation', 'anime', 'architecture', 'art',
             'astronomy', 'baby', 'batshitinsane', 'biography', 'biology', 'book', 'books', 'business',
             'camera', 'cars', 'cats', 'cinema', 'classic', 'comedy', 'comics', 'computers', 'cookbook', 'cooking',
             'crime', 'culture', 'dark', 'design', 'digital', 'documentary', 'dogs', 'drama', 'drugs', 'education',
@@ -85,5 +73,7 @@ class TaxonomyFixtures extends Fixture implements DependentFixtureInterface
             'television', 'terrorism', 'thriller', 'travel', 'tv', 'uk', 'urban', 'us', 'usa', 'vampire', 'video',
             'videogames', 'war', 'web', 'women', 'world', 'writing', 'wtf', 'zombies',
         ];
+
+        return array_combine($options, $options);
     }
 }

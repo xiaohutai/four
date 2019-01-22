@@ -1,0 +1,70 @@
+{% extends '@bolt/_base/layout.html.twig' %}
+{% import '@bolt/_macro/_macro.html.twig' as macro %}
+
+{% set alltypes = ['select'] %}
+{% for key, fielddefinition in record.definition.fields %}
+    {% set alltypes = alltypes | merge([fielddefinition.type]) %}
+{% endfor %}
+
+{% block title %}
+    {{ icon(record) }}
+    {{ 'caption.edit'|trans }}
+    {{ record.definition.singular_name }}
+    »
+    <strong>{{ record.magicTitle()|default('New')|excerpt(50) }}</strong>
+{% endblock %}
+
+{% block vue_id 'editor' %}
+
+{# This 'topsection' gets output _before_ the main form, allowing `dump()`, without breaking Vue #}
+{% block topsection %}
+
+{% endblock %}
+
+{% block main %}
+
+    <form method="post" id="editcontent">
+
+        <input type="hidden" name="_csrf_token" value="{{ csrf_token('editrecord') }}">
+        <input type="hidden" name="_edit_locale" value="{{ currentlocale }}">
+
+        {% set groups = record.definition.groups %}
+
+        {% include '@bolt/content/_tabs.html.twig' %}
+
+        <div class="tab-content" id="nav-tabContent">
+
+            {% include '@bolt/content/_fields.html.twig' %}
+
+            {% include '@bolt/content/_taxonomies.html.twig' %}
+
+        </div>
+
+        {{ macro.button('action.save', 'fa-save', 'success') }}
+
+    </form>
+
+{% endblock %}
+
+{% block aside %}
+
+    <div id="metadata">
+        <form class="ui form">
+
+            <div class="card mb-3">
+              <div class="card-body">
+                  {{ macro.button('action.save', 'fa-save', 'success', 'submit', 'editcontent') }}
+              </div>
+            </div>
+
+            {% include '@bolt/content/_localeswitcher.html.twig' %}
+
+            <div class="card">
+                <div class="card-body">
+                    {% include '@bolt/content/_fields_aside.html.twig' %}
+                </div>
+            </div>
+        </form>
+    </div>
+
+{% endblock aside %}

@@ -4,11 +4,18 @@ declare(strict_types=1);
 
 namespace Bolt\Entity;
 
+use ApiPlatform\Core\Annotation\ApiResource;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Security\Core\User\UserInterface;
+use Symfony\Component\Serializer\Annotation\Groups;
 use Symfony\Component\Validator\Constraints as Assert;
 
 /**
+ * @ApiResource(
+ *     normalizationContext={"groups"={"get_content", "get_user"}},
+ *     collectionOperations={"get"},
+ *     itemOperations={"get", "put"}
+ * )
  * @ORM\Entity(repositoryClass="Bolt\Repository\UserRepository")
  * @ORM\Table(name="bolt_user")
  */
@@ -20,6 +27,7 @@ class User implements UserInterface, \Serializable
      * @ORM\Id
      * @ORM\GeneratedValue
      * @ORM\Column(type="integer")
+     * @Groups("get_user")
      */
     private $id;
 
@@ -28,8 +36,9 @@ class User implements UserInterface, \Serializable
      *
      * @ORM\Column(type="string")
      * @Assert\NotBlank()
+     * @Groups({"get_content", "get_user"})
      */
-    private $fullName;
+    private $displayName;
 
     /**
      * @var string
@@ -37,6 +46,7 @@ class User implements UserInterface, \Serializable
      * @ORM\Column(type="string", unique=true, length=190)
      * @Assert\NotBlank()
      * @Assert\Length(min=2, max=50)
+     * @Groups("get_user")
      */
     private $username;
 
@@ -45,6 +55,7 @@ class User implements UserInterface, \Serializable
      *
      * @ORM\Column(type="string", unique=true, length=190)
      * @Assert\Email()
+     * @Groups("get_user")
      */
     private $email;
 
@@ -59,11 +70,13 @@ class User implements UserInterface, \Serializable
      * @var array
      *
      * @ORM\Column(type="json")
+     * @Groups("get_user")
      */
     private $roles = [];
 
     /**
      * @ORM\Column(type="datetime", nullable=true)
+     * @Groups("get_user")
      */
     private $lastseenAt;
 
@@ -71,6 +84,17 @@ class User implements UserInterface, \Serializable
      * @ORM\Column(type="string", length=100, nullable=true)
      */
     private $lastIp;
+
+    /**
+     * @ORM\Column(type="string", length=191, nullable=true)
+     * @Groups("get_user")
+     */
+    private $locale;
+
+    /**
+     * @ORM\Column(type="string", length=191, nullable=true)
+     */
+    private $backendTheme;
 
     public function __construct()
     {
@@ -81,19 +105,19 @@ class User implements UserInterface, \Serializable
         return $this->id;
     }
 
-    public function setFullName(string $fullName): void
+    public function setDisplayName(string $displayName): void
     {
-        $this->fullName = $fullName;
+        $this->displayName = $displayName;
     }
 
-    public function getFullName(): string
+    public function getDisplayName(): string
     {
-        return $this->fullName;
+        return $this->displayName;
     }
 
     public function __toString()
     {
-        return $this->getFullName();
+        return $this->getdisplayName();
     }
 
     public function getUsername(): string
@@ -209,6 +233,30 @@ class User implements UserInterface, \Serializable
     public function setLastIp(?string $lastIp): self
     {
         $this->lastIp = $lastIp;
+
+        return $this;
+    }
+
+    public function getLocale(): ?string
+    {
+        return $this->locale;
+    }
+
+    public function setLocale(?string $locale): self
+    {
+        $this->locale = $locale;
+
+        return $this;
+    }
+
+    public function getBackendTheme(): ?string
+    {
+        return $this->backendTheme;
+    }
+
+    public function setBackendTheme(?string $backendTheme): self
+    {
+        $this->backendTheme = $backendTheme;
 
         return $this;
     }

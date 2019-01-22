@@ -5,12 +5,12 @@ declare(strict_types=1);
 namespace Bolt\Controller;
 
 use Bolt\Configuration\Config;
+use Bolt\Entity\Field\TemplateselectField;
 use Bolt\TemplateChooser;
 use Bolt\Version;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Security\Csrf\CsrfTokenManagerInterface;
-use Tightenco\Collect\Support\Collection;
 
 class BaseController extends AbstractController
 {
@@ -23,10 +23,9 @@ class BaseController extends AbstractController
     /** @var CsrfTokenManagerInterface */
     protected $csrfTokenManager;
 
-    public function __construct(Config $config, TemplateChooser $templateChooser, CsrfTokenManagerInterface $csrfTokenManager)
+    public function __construct(Config $config, CsrfTokenManagerInterface $csrfTokenManager)
     {
         $this->config = $config;
-        $this->templateChooser = $templateChooser;
         $this->csrfTokenManager = $csrfTokenManager;
     }
 
@@ -35,17 +34,13 @@ class BaseController extends AbstractController
      *
      * @final
      *
-     * @param mixed         $template
-     * @param array         $parameters
-     * @param Response|null $response
+     * @param string|array $template
      *
      * @throws \Twig_Error_Loader
      * @throws \Twig_Error_Runtime
      * @throws \Twig_Error_Syntax
-     *
-     * @return Response
      */
-    protected function renderTemplate($template, array $parameters = [], Response $response = null): Response
+    protected function renderTemplate($template, array $parameters = [], ?Response $response = null): Response
     {
         /** @var \Twig_Environment $twig */
         $twig = $this->container->get('twig');
@@ -56,8 +51,17 @@ class BaseController extends AbstractController
         $parameters['user'] = $this->getUser();
 
         // Resolve string|array of templates into the first one that is found.
-        if ($template instanceof Collection) {
-            $template = $twig->resolveTemplate($template->toArray());
+        if (is_array($template)) {
+            $templates = collect($template)
+                ->map(function ($element): ?string {
+                    if ($element instanceof TemplateselectField) {
+                        return $element->__toString();
+                    }
+                    return $element;
+                })
+                ->filter()
+                ->toArray();
+            $template = $twig->resolveTemplate($templates);
         }
 
         $content = $twig->render($template, $parameters);
@@ -75,7 +79,6 @@ class BaseController extends AbstractController
      * Shortcut for {@see \Bolt\Config::get}.
      *
      * @param string $path
-     * @param mixed  $default
      *
      * @return string|int|array|null
      */

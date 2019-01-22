@@ -12,9 +12,9 @@ use Bolt\Entity\Media;
 use Doctrine\Common\Persistence\ObjectManager;
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\Security;
 use Symfony\Component\Finder\Finder;
-use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
-use Tightenco\Collect\Support\Collection;
+use Symfony\Component\Security\Csrf\CsrfTokenManagerInterface;
 use Webmozart\PathUtil\Path;
 
 /**
@@ -27,7 +27,7 @@ class MediaController extends BaseController
     /** @var ObjectManager */
     private $manager;
 
-    /** @var Collection */
+    /** @var Areas */
     private $areas;
 
     /** @var MediaFactory */
@@ -35,25 +35,20 @@ class MediaController extends BaseController
 
     /**
      * MediaController constructor.
-     *
-     * @param Config        $config
-     * @param ObjectManager $manager
-     * @param Areas         $areas
-     * @param MediaFactory  $mediaFactory
      */
-    public function __construct(Config $config, ObjectManager $manager, Areas $areas, MediaFactory $mediaFactory)
+    public function __construct(Config $config, CsrfTokenManagerInterface $csrfTokenManager, ObjectManager $manager, Areas $areas, MediaFactory $mediaFactory)
     {
-        $this->config = $config;
+        parent::__construct($config, $csrfTokenManager);
+
         $this->manager = $manager;
         $this->areas = $areas;
-
         $this->mediaFactory = $mediaFactory;
     }
 
     /**
      * @Route("/media/crawl/{area}", name="bolt_media_crawler", methods={"GET"})
      */
-    public function finder($area, Request $request)
+    public function finder(string $area): Response
     {
         $basepath = $this->areas->get($area, 'basepath');
 
@@ -67,23 +62,22 @@ class MediaController extends BaseController
         }
 
         return $this->renderTemplate('finder/finder.twig', [
-            'path' => $path,
-            'name' => $areas[$area]['name'],
+            'path' => 'path',
+            'name' => $this->areas->get($area, 'name'),
             'area' => $area,
             'finder' => $finder,
-            'parent' => $parent,
-            'allfiles' => $areas[$area]['show_all'] ? $this->buildIndex($basepath) : false,
+            'parent' => 'parent',
         ]);
     }
 
-    private function findFiles($base)
+    private function findFiles(string $base): Finder
     {
         $fullpath = Path::canonicalize($base);
 
         $glob = sprintf('*.{%s}', $this->config->getMediaTypes()->implode(','));
 
         $finder = new Finder();
-        $finder->in($fullpath)->depth('< 2')->sortByName(true)->name($glob)->files();
+        $finder->in($fullpath)->depth('< 2')->sortByName()->name($glob)->files();
 
         return $finder;
     }

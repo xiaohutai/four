@@ -18,8 +18,6 @@ class TemplateChooser
 
     /**
      * Constructor.
-     *
-     * @param Config $config
      */
     public function __construct(Config $config)
     {
@@ -28,206 +26,152 @@ class TemplateChooser
 
     /**
      * Choose a template for the homepage.
-     *
-     * @param Content $content
-     *
-     * @return Collection
      */
-    public function homepage(Content $content = null): Collection
+    public function homepage(?Content $content = null): array
     {
-        $templates = collect([]);
+        $templates = new Collection();
 
         // First candidate: Theme-specific config.yml file.
-        if ($template = $this->config->get('theme/homepage_template')) {
-            $templates->push($template);
-        }
+        $templates->push($this->config->get('theme/homepage_template'));
 
         // Second candidate: Global config.yml file.
-        if ($template = $this->config->get('general/homepage_template')) {
-            $templates->push($template);
-        }
+        $templates->push($this->config->get('general/homepage_template'));
 
         if (empty($content)) {
             // Fallback if no content: index.twig
-            $templates->push('index.twig');
+            $templates->push('index.html.twig')->push('index.twig');
         } elseif (is_array($content)) {
             // Fallback with multiple content: use listing() to choose template
+            /** @var Content $first */
             $first = reset($content);
-            $templates->merge($this->listing($first->contenttype));
+            $templates = $templates->merge($this->listing($first->getDefinition()));
         } else {
             // Fallback with single content: use record() to choose template
-            $templates->merge($templates, $this->record($content));
+            $templates = $templates->merge($this->record($content));
         }
 
-        return $templates->unique();
+        return $templates->unique()->toArray();
     }
 
     /**
      * Choose a template for a single record page, e.g.:
      * - '/page/about'
      * - '/entry/lorum-ipsum'.
-     *
-     * @param Content $record
-     * @param array   $data
-     *
-     * @return Collection
      */
-    public function record(Content $record, array $data = null): Collection
+    public function record(Content $record, ?array $data = null): array
     {
-        $templates = collect([]);
+        $templates = new Collection();
+        $definition = $record->getDefinition();
 
-        // First candidate: A legacy Content record has a templateselect field, and it's set.
-        if (isset($record->contenttype['fields'])) {
-            foreach ($record->contenttype['fields'] as $name => $field) {
-                if ($field['type'] === 'templateselect' && !empty($record->values[$name])) {
-                    $templates->push($record->values[$name]);
-                }
+        // First candidate: Content record has a templateselect field, and it's set.
+        foreach ($definition->get('fields') as $name => $field) {
+            if ($field['type'] === 'templateselect' && $record->has($name)) {
+                $templates->push((string) $record->get($name));
             }
         }
 
-        // Second candidate: An entity has a templateselect field, and it's set.
-        if (isset($record->contenttype['fields'])) {
-            foreach ($record->contenttype['fields'] as $name => $field) {
-                if ($field['type'] === 'templateselect' && !empty($record[$name])) {
-                    $templates->push($record[$name]);
-                }
-
-                if ($field['type'] === 'templateselect' && $data !== null && !empty($data[$name])) {
-                    $templates->push($data[$name]);
-                }
-            }
+        // Second candidate: defined specifically in the content type.
+        if ($definition->has('record_template')) {
+            $templates->push($definition->get('record_template'));
         }
 
-        // Third candidate: defined specifically in the contenttype.
-        if (isset($record->contenttype['record_template'])) {
-            $templates->push($record->contenttype['record_template']);
-        }
+        // Third candidate: a template with the same filename as the name of
+        // the content type.
+        $templates->push($definition->get('singular_slug') . '.html.twig');
+        $templates->push($definition->get('singular_slug') . '.twig');
 
-        // Fourth candidate: a template with the same filename as the name of
-        // the contenttype.
-        if (isset($record->contenttype['singular_slug'])) {
-            $templates->push($record->contenttype['singular_slug'] . '.twig');
-        }
+        // Fourth candidate: Theme-specific config.yml file.
+        $templates->push($this->config->get('theme/record_template'));
 
-        // Fifth candidate: Theme-specific config.yml file.
-        if ($template = $this->config->get('theme/record_template')) {
-            $templates->push($template);
-        }
-
-        // Sixth candidate: global config.yml
+        // Fifth candidate: global config.yml
         $templates->push($this->config->get('general/record_template'));
 
-        // Seventh candidate: fallback to 'record.twig'
-        $templates->push('record.twig');
+        // Sixth candidate: fallback to 'record.html.twig'
+        $templates->push('record.html.twig');
 
-        return $templates->unique();
+        return $templates->unique()->filter()->toArray();
     }
 
     /**
      * Select a template for listing pages.
-     *
-     * @param Collection $contenttype
-     *
-     * @return Collection
      */
-    public function listing(Collection $contenttype = null): Collection
+    public function listing(?Collection $contentType = null): array
     {
-        $templates = collect([]);
+        $templates = new Collection();
 
-        // First candidate: defined specifically in the contenttype.
-        if (!empty($contenttype['listing_template'])) {
-            $templates->push($contenttype['listing_template']);
+        // First candidate: defined specifically in the content type.
+        if (! empty($contentType['listing_template'])) {
+            $templates->push($contentType['listing_template']);
         }
 
         // Second candidate: a template with the same filename as the name of
-        // the contenttype.
-        if (!empty($contenttype['listing_template'])) {
-            $templates->push($contenttype['slug'] . '.twig');
-        }
+        // the content type.
+        $templates->push($contentType['slug'] . '.html.twig');
+        $templates->push($contentType['slug'] . '.twig');
 
         // Third candidate: Theme-specific config.yml file.
-        if ($template = $this->config->get('theme/listing_template')) {
-            $templates->push($template);
-        }
+        $templates->push($this->config->get('theme/listing_template'));
 
         // Fourth candidate: Global config.yml
         $templates->push($this->config->get('general/listing_template'));
 
-        // Fifth candidate: fallback to 'listing.twig'
-        $templates->push('listing.twig');
+        // Fifth candidate: fallback to 'listing.html.twig'
+        $templates->push('listing.html.twig');
 
-        return $templates->unique();
+        return $templates->unique()->filter()->toArray();
     }
 
     /**
      * Select a template for taxonomy.
-     *
-     * @param string $taxonomyslug
-     *
-     * @return Collection
      */
-    public function taxonomy(string $taxonomyslug): Collection
+    public function taxonomy(string $taxonomyslug): array
     {
-        $templates = collect([]);
+        $templates = new Collection();
 
         // First candidate: defined specifically in the taxonomy
-        if ($template = $this->config->get('taxonomy/' . $taxonomyslug . '/listing_template')) {
-            $templates->push($template);
-        }
+        $templates->push($this->config->get('taxonomy/' . $taxonomyslug . '/listing_template'));
 
         // Second candidate: Theme-specific config.yml file.
-        if ($template = $this->config->get('theme/listing_template')) {
-            $templates->push($template);
-        }
+        $templates->push($this->config->get('theme/listing_template'));
 
         // Third candidate: Global config.yml
         $templates->push($this->config->get('general/listing_template'));
 
-        return $templates->unique();
+        return $templates->unique()->filter()->toArray();
     }
 
     /**
      * Select a search template.
-     *
-     * @return Collection
      */
-    public function search(): Collection
+    public function search(): array
     {
-        $templates = collect([]);
+        $templates = new Collection();
 
         // First candidate: specific search setting in global config.
-        if ($template = $this->config->get('theme/search_results_template')) {
-            $templates->push($template);
-        }
+        $templates->push($this->config->get('theme/search_results_template'));
 
         // Second candidate: specific search setting in global config.
-        if ($template = $this->config->get('general/search_results_template')) {
-            $templates->push($template);
-        }
+        $templates->push($this->config->get('general/search_results_template'));
 
         // Third candidate: listing config setting.
         $templates->push($this->config->get('general/listing_template'));
 
-        return $templates->unique();
+        return $templates->unique()->filter()->toArray();
     }
 
     /**
      * Select a template to use for the "maintenance" page.
-     *
-     * @return Collection
      */
-    public function maintenance(): Collection
+    public function maintenance(): array
     {
-        $templates = collect([]);
+        $templates = new Collection();
 
         // First candidate: Theme-specific config.
-        if ($template = $this->config->get('theme/maintenance_template')) {
-            $templates->push($template);
-        }
+        $templates->push($this->config->get('theme/maintenance_template'));
 
         // Second candidate: global config.
         $templates->push($this->config->get('general/maintenance_template'));
 
-        return $templates->unique();
+        return $templates->unique()->filter()->toArray();
     }
 }

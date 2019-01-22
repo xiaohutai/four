@@ -1,18 +1,8 @@
 //** Layout | Admin
 
-$admin-toolbar-height: 28px;
+$admin-toolbar-height: 30px;
+$admin-sidebar-width: 200px;
 $admin-header-height: 70px;
-$admin-sidebar-width: 190px;
-
-html, body {
-  margin: 0;
-  height: 100%;
-}
-
-body {
-  background: color('gray');
-  min-height: 100%;
-}
 
 // Main Layout Grid
 
@@ -51,11 +41,13 @@ body {
 
   &__header {
     display: flex;
-    flex-basis: 100%;
     grid-area: header;
-    height: $admin-header-height;
     position: relative;
-    padding: 0 $spacer*2;
+    padding: 1.5rem 0 0 0;
+
+    .container {
+      padding: 0;
+    }
   }
 
   &__sidebar {
@@ -66,37 +58,33 @@ body {
   &__body {
     flex: 1;
     grid-area: body;
-    padding: $spacer*2 $spacer*1 $spacer*2 $spacer*2;
-    min-height: 100vh;
-
-    @include media-breakpoint-up(xl) {
-      padding: $spacer*2 $spacer*2 $spacer*2 $spacer*4;
+    padding-top: 0;
+    &.is-wide{
+      .admin__body--container{
+        grid-template-columns:  auto;
+        grid-template-areas:    "main"
+                                "aside";
+      }
     }
-
     >.container{
-      display: flex;
+      padding: 0;
+    }
+    &--container{
+      display: grid;
+      grid-template-columns:  auto $admin-sidebar-width * 1.25;
+      grid-template-areas:    "main    aside";
+      padding: $spacer * 2;
     }
 
     &--main{
-      padding-right: $spacer*2;
-      flex: 100%;
-      @include media-breakpoint-up(xl) {
-        padding-right: $spacer*4;
-      }
+      grid-area: main;
+      min-width: 0;
+      padding-right: $spacer * 2;
     }
 
     &--aside{
-      flex: 0 0 $admin-sidebar-width * 1.25;
-
-      @include media-breakpoint-up(xl) {
-        flex: 0 0 $admin-sidebar-width * 1.5;
-      }
+      grid-area: aside;
+      width: $admin-sidebar-width * 1.25;
     }
-  }
-}
-
-.container {
-  @include media-breakpoint-up(xl) {
-    max-width: 1540px;
   }
 }

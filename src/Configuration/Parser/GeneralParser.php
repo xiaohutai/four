@@ -5,16 +5,15 @@ declare(strict_types=1);
 namespace Bolt\Configuration\Parser;
 
 use Bolt\Common\Arr;
-use Bolt\Helpers\Html;
-use Bolt\Helpers\Str;
+use Bolt\Utils\Html;
+use Bolt\Utils\Str;
 use Tightenco\Collect\Support\Collection;
+use Webmozart\PathUtil\Path;
 
 class GeneralParser extends BaseParser
 {
     /**
      * Read and parse the config.yaml and config_local.yaml configuration files.
-     *
-     * @return Collection
      */
     public function parse(): Collection
     {
@@ -24,7 +23,13 @@ class GeneralParser extends BaseParser
         $general = Arr::replaceRecursive($defaultconfig, Arr::replaceRecursive($tempconfig, $tempconfiglocal));
 
         // Make sure Bolt's mount point is OK:
-        $general['branding']['path'] = '/' . Str::makeSafe($general['branding']['path']);
+        $path = $general['branding']['path'];
+        if (is_string($path)) {
+            $path = '/' . Str::makeSafe($path);
+        } else {
+            $path = '/';
+        }
+        $general['branding']['path'] = $path;
 
         // Set the link in branding, if provided_by is set.
         $general['branding']['provided_link'] = Html::providerLink(
@@ -38,8 +43,6 @@ class GeneralParser extends BaseParser
 
     /**
      * Assume sensible defaults for a number of options.
-     *
-     * @return array
      */
     protected function getDefaultConfig(): array
     {
@@ -79,7 +82,7 @@ class GeneralParser extends BaseParser
             'debug_trace_argument_limit' => 4,
             'strict_variables' => null,
             'theme' => 'base-2016',
-            'listing_template' => 'listing.twig',
+            'listing_template' => 'listing.html.twig',
             'listing_records' => '5',
             'listing_sort' => 'datepublish DESC',
             'caching' => [
@@ -158,10 +161,6 @@ class GeneralParser extends BaseParser
 
     /**
      * Parse and fine-tune the database configuration.
-     *
-     * @param array $options
-     *
-     * @return Collection
      */
     protected function parseDatabase(array $options): Collection
     {
@@ -222,17 +221,16 @@ class GeneralParser extends BaseParser
      * - Bolt keys are converted to Doctrine keys
      * - Invalid keys are filtered out
      *
-     * @param array $params
-     * @param array $defaults
-     *
-     * @return Collection
+     * @param array|string $params
      */
-    protected function parseConnectionParams(array $params, $defaults = []): Collection
+    protected function parseConnectionParams($params, ?Collection $defaults = null): Collection
     {
         // Handle host shortcut
         if (is_string($params)) {
             $params = ['host' => $params];
         }
+
+        $params = collect($params);
 
         // Convert keys from Bolt
         $replacements = [
@@ -246,8 +244,10 @@ class GeneralParser extends BaseParser
             }
         }
 
-        // Merge in defaults
-        $params = collect($defaults)->merge($params);
+        // Merge with defaults
+        if ($defaults !== null) {
+            $params = $defaults->merge($params);
+        }
 
         // Filter out invalid keys
         $validKeys = [
@@ -258,17 +258,13 @@ class GeneralParser extends BaseParser
             'servicename', 'service', 'pooled', 'instancename', 'server', // Oracle
             'persistent',                                                 // SQL Anywhere
         ];
-        $params = $params->intersectByKeys($validKeys);
-
-        return $params;
+        return $params->intersectByKeys($validKeys);
     }
 
     /**
      * Fine-tune Sqlite configuration parameters.
-     *
-     * @return array
      */
-    protected function parseSqliteOptions(array $config): array
+    protected function parseSqliteOptions(Collection $config): Collection
     {
         if (isset($config['memory']) && $config['memory']) {
             // If in-memory, no need to parse paths
@@ -280,9 +276,9 @@ class GeneralParser extends BaseParser
         unset($config['memory']);
 
         // Get path from config or use database path
-        $path = isset($config['path']) ? $config['path'] : $pathResolver->resolve('database');
+        $path = $config['path'] ?? $this->pathResolver->resolve('database');
         if (Path::isRelative($path)) {
-            $path = $pathResolver->resolve($path);
+            $path = $this->pathResolver->resolve($path);
         }
 
         // If path has filename with extension, use that
@@ -294,7 +290,7 @@ class GeneralParser extends BaseParser
 
         // Use database name for filename
         $filename = basename($config['dbname']);
-        if (!Path::hasExtension($filename)) {
+        if (! Path::hasExtension($filename)) {
             $filename .= '.db';
         }
 
